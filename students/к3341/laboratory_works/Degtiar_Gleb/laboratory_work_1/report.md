@@ -19,16 +19,14 @@
 
 **Условие.** Клиент отправляет серверу «Hello, server», сервер выводит его и отвечает «Hello, client».
 
-**Как устроено.**
-
 - Сокет создаётся с `socket.SOCK_DGRAM` — это UDP. Соединения нет, поэтому у сервера нет `listen()` и `accept()`:
   достаточно `bind()` и пары `recvfrom()` / `sendto()`.
 - `recvfrom()` возвращает данные **и адрес отправителя** — именно по нему сервер отвечает.
 - UDP не гарантирует доставку, поэтому у клиента стоит таймаут ожидания ответа.
 
-??? info "Код сервера — `task1_udp/server.py`"
-    ```python
-    """Задание 1. UDP-сервер: принимает «Hello, server», отвечает «Hello, client»."""
+"Код сервера — `task1_udp/server.py`"
+Задание 1.
+
     import socket
 
     HOST = "127.0.0.1"
@@ -55,7 +53,7 @@
             print("\nСервер остановлен.")
     ```
 
-??? info "Код клиента — `task1_udp/client.py`"
+  info "Код клиента — `task1_udp/client.py`"
     ```python
     """Задание 1. UDP-клиент: отправляет «Hello, server» и печатает ответ сервера."""
     import socket
@@ -120,7 +118,7 @@
 - Операции вынесены в модуль `operations.py`: в нём реализованы все четыре варианта задания,
   а нужный выбирается константой `VARIANT`. Клиент берёт оттуда названия параметров, сервер — функцию вычисления.
 
-??? info "Код операций — `task2_tcp/operations.py`"
+  info "Код операций — `task2_tcp/operations.py`"
     ```python
     """Математические операции для задания 2.
 
@@ -181,7 +179,7 @@
     NAME, PARAMS, FUNC = OPERATIONS[VARIANT]
     ```
 
-??? info "Код сервера — `task2_tcp/server.py`"
+  info "Код сервера — `task2_tcp/server.py`"
     ```python
     """Задание 2. TCP-сервер: получает параметры, считает, возвращает результат.
 
@@ -238,7 +236,7 @@
             print("\nСервер остановлен.")
     ```
 
-??? info "Код клиента — `task2_tcp/client.py`"
+  info "Код клиента — `task2_tcp/client.py`"
     ```python
     """Задание 2. TCP-клиент: вводит параметры с клавиатуры, получает результат."""
     import socket
@@ -331,7 +329,7 @@ Connection: close
 <содержимое index.html>
 ```
 
-??? info "Код сервера — `task3_http/server.py`"
+  info "Код сервера — `task3_http/server.py`"
     ```python
     """Задание 3. Сервер раздаёт HTML-страницу из index.html по HTTP."""
     import socket
@@ -378,7 +376,7 @@ Connection: close
             print("\nСервер остановлен.")
     ```
 
-??? info "HTML-страница — `task3_http/index.html`"
+  info "HTML-страница — `task3_http/index.html`"
     ```html
     <!DOCTYPE html>
     <html lang="ru">
@@ -451,7 +449,7 @@ Connection: close
 | Текст пользователя | `[Alice] Привет всем!` |
 | Вход / выход | `*** Bob вошёл в чат ***` / `*** Bob покинул чат ***` |
 
-??? info "Код сервера — `task4_chat/server.py`"
+  info "Код сервера — `task4_chat/server.py`"
     ```python
     """Задание 4. Многопользовательский TCP-чат.
 
@@ -551,7 +549,7 @@ Connection: close
             print("\nСервер остановлен.")
     ```
 
-??? info "Код клиента — `task4_chat/client.py`"
+  info "Код клиента — `task4_chat/client.py`"
     ```python
     """Задание 4. Клиент чата. Один и тот же скрипт запускают все участники.
 
@@ -726,7 +724,7 @@ Connection: close
 - После успешного POST сервер отвечает `303` с `Location: /` (шаблон Post/Redirect/Get):
   при обновлении страницы браузер не отправит форму повторно.
 
-??? info "Код сервера — `task5_grades/server.py`"
+  info "Код сервера — `task5_grades/server.py`"
     ```python
     """Задание 5. Веб-сервер журнала оценок на чистых сокетах (GET и POST).
 
