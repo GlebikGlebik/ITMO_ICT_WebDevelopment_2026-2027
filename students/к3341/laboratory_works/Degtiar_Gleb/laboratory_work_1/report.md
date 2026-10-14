@@ -519,8 +519,6 @@ Connection: close
 `dict[str, list[int]]`: ключ — название предмета, значение — список его оценок.
 Две оценки по математике дают **одну** запись `"Математика": [5, 4]`, а не две строки.
 
-**Как устроено.**
-
 - Запрос разбирается вручную: читаем из сокета до `\r\n\r\n`, парсим первую строку (`метод путь версия`)
   и заголовки, затем **дочитываем ровно `Content-Length` байт тела** — тело POST может прийти отдельным пакетом
   (проверено отдельным тестом).
@@ -530,16 +528,9 @@ Connection: close
 - После успешного POST сервер отвечает `303` с `Location: /` (шаблон Post/Redirect/Get):
   при обновлении страницы браузер не отправит форму повторно.
 
-  info "Код сервера — `task5_grades/server.py`"
-    ```python
-    """Задание 5. Веб-сервер журнала оценок на чистых сокетах (GET и POST).
+Код сервера — `task5_grades/server.py`
 
-      GET  /        -> HTML-страница: журнал, сгруппированный по дисциплинам + форма
-      POST /grades  -> принимает subject=<дисциплина>&grade=<оценка>
-                       (application/x-www-form-urlencoded), сохраняет, 303 -> /
-
-    Хранилище: dict {дисциплина: [оценки]} — одна запись на предмет, оценки списком.
-    """
+```
     import html
     import socket
     import threading
@@ -554,8 +545,6 @@ Connection: close
     grades: dict[str, list[int]] = {}
     grades_lock = threading.Lock()
 
-
-    # ---------- разбор запроса ----------
     class BadRequest(Exception):
         pass
 
@@ -718,65 +707,19 @@ Connection: close
             main()
         except KeyboardInterrupt:
             print("\nСервер остановлен.")
-    ```
+```
 
-**Пример работы.** Запуск `python server.py`, затем `curl` (или форма в браузере на `http://127.0.0.1:8080/`):
-
-=== "Добавление оценок"
-
-    ```text
-    $ curl -i -X POST --data-urlencode "subject=Математика" -d "grade=5" http://127.0.0.1:8080/grades
-    HTTP/1.1 303 See Other
-    Content-Type: text/html; charset=UTF-8
-    Content-Length: 0
-    Connection: close
-    Location: /
-
-    $ curl -X POST --data-urlencode "subject=Математика" -d "grade=4" http://127.0.0.1:8080/grades
-    $ curl -X POST --data-urlencode "subject=Физика" -d "grade=3" http://127.0.0.1:8080/grades
-    ```
-
-=== "Журнал (GET /)"
-
-    ```text
-    $ curl -s http://127.0.0.1:8080/
-    ...
-    <table><tr><th>Дисциплина</th><th>Оценки</th><th>Средний балл</th></tr><tr><td>Математика</td><td>5, 4</td><td>4.50</td></tr><tr><td>Физика</td><td>3</td><td>3.00</td></tr></table>
-    ...
-    ```
-
-=== "Обработка ошибок"
-
-    ```text
-    оценка 7              -> 400
-    оценка "abc"          -> 400
-    нет поля subject      -> 400
-    GET /nope             -> 404
-    DELETE /              -> 405
-    POST /nope            -> 404
-    ```
-
-=== "Экранирование"
-
-    ```text
-    $ curl -X POST --data-urlencode "subject=<b>XSS</b>" -d "grade=5" http://127.0.0.1:8080/grades
-    ...
-    <tr><td>&lt;b&gt;XSS&lt;/b&gt;</td><td>5</td><td>5.00</td></tr>
-    ...
-    ```
+**Пример работы.**
 
 ---
 
-## Запуск (кратко)
+<img width="1919" height="379" alt="image" src="https://github.com/user-attachments/assets/9b333e6f-3d4c-48d4-9483-1548ad55d75e" />
 
-```bash
-cd students/K3341/laboratory_works/Degtiar_gleb/laboratory_work_1/task1_udp
-python server.py      # терминал 1
-python client.py      # терминал 2
-```
+<img width="1919" height="1079" alt="image" src="https://github.com/user-attachments/assets/29ce88af-d33f-4bdf-9a89-49a7822f2795" />
 
-Остальные задания запускаются так же (`task2_tcp`, `task3_http`, `task4_chat`, `task5_grades`).
-Для чата: `python client.py Alice`, `python client.py Bob` и т. д. — по одному терминалу на участника.
+<img width="1919" height="380" alt="image" src="https://github.com/user-attachments/assets/b85e28ff-1523-4b5e-9a83-2cd76fdebdc4" />
+
+---
 
 ## Выводы
 
