@@ -24,9 +24,11 @@
 - `recvfrom()` возвращает данные **и адрес отправителя** — именно по нему сервер отвечает.
 - UDP не гарантирует доставку, поэтому у клиента стоит таймаут ожидания ответа.
 
-"Код сервера — `task1_udp/server.py`"
-Задание 1.
+Задание 1:
 
+Код сервера — `task1_udp/server.py`
+
+```
     import socket
 
     HOST = "127.0.0.1"
@@ -51,11 +53,11 @@
             main()
         except KeyboardInterrupt:
             print("\nСервер остановлен.")
-    ```
+```
 
-  info "Код клиента — `task1_udp/client.py`"
-    ```python
-    """Задание 1. UDP-клиент: отправляет «Hello, server» и печатает ответ сервера."""
+Код клиента — `task1_udp/client.py`
+
+```
     import socket
 
     SERVER_ADDRESS = ("127.0.0.1", 9001)
@@ -78,26 +80,21 @@
 
     if __name__ == "__main__":
         main()
-    ```
+```
 
 **Пример работы.**
 
-=== "Терминал 1: сервер"
+---
 
-    ```text
-    UDP-сервер запущен на 127.0.0.1:9001. Ожидание сообщения (Ctrl+C — выход)...
-    [сервер] от ('127.0.0.1', 60508): Hello, server
-    ```
+<img width="1873" height="349" alt="image" src="https://github.com/user-attachments/assets/5935d432-d886-4109-8a6b-0552929b87a9" />
 
-=== "Терминал 2: клиент"
+<img width="1919" height="380" alt="image" src="https://github.com/user-attachments/assets/7a08de45-d2aa-4f6f-b4f2-92076b80af95" />
 
-    ```text
-    [клиент] от сервера: Hello, client
-    ```
+<img width="1919" height="379" alt="image" src="https://github.com/user-attachments/assets/944ffe93-f60e-436d-924d-dfcc71bfa490" />
 
 ---
 
-## Задание 2. Вычисления через TCP
+## Задание 2. Вычисления через TCP. Вариант 3.
 
 **Условие.** Клиент запрашивает математическую операцию, параметры вводятся с клавиатуры, сервер
 считает и возвращает результат. Вариант: **1 — теорема Пифагора**.
@@ -105,218 +102,122 @@
 **Протокол прикладного уровня.** TCP — потоковый протокол и сам не разделяет сообщения, поэтому
 договариваемся о формате: одно сообщение = одна строка, оканчивающаяся `\n`.
 
-| Направление | Содержимое | Пример |
-|-------------|-----------|--------|
-| клиент → сервер | числа через пробел | `3 4` |
-| сервер → клиент | `OK: <результат>` или `ОШИБКА: <причина>` | `OK: Гипотенуза c = ... = 5.0000` |
-
-**Как устроено.**
-
 - `listen()` + `accept()` на сервере, `connect()` (через `create_connection`) на клиенте.
 - Сервер проверяет число параметров, что они числа, и что значения допустимы (катеты > 0);
   при ошибке возвращает понятное сообщение, а не падает.
-- Операции вынесены в модуль `operations.py`: в нём реализованы все четыре варианта задания,
-  а нужный выбирается константой `VARIANT`. Клиент берёт оттуда названия параметров, сервер — функцию вычисления.
+- Операция вынесена в модуль `trapezoid.py`. Клиент берёт оттуда названия параметров, сервер — функцию вычисления.
 
-  info "Код операций — `task2_tcp/operations.py`"
-    ```python
-    """Математические операции для задания 2.
+Код операций — `task2_tcp/trapezoid.py`
 
-    Вариант выбирается по порядковому номеру в журнале — измените VARIANT:
-        1 — теорема Пифагора
-        2 — решение квадратного уравнения
-        3 — площадь трапеции
-        4 — площадь параллелограмма
+```
+def trapezoid(a: float, b: float, h: float) -> str:
+    if a <= 0 or b <= 0 or h <= 0:
+        raise ValueError("Основания и высота должны быть положительными")
+    return f"Площадь трапеции S = (({a:g} + {b:g}) / 2) * {h:g} = {(a + b) / 2 * h:.4f}"
 
-    Модуль общий для клиента и сервера: клиент берёт отсюда названия параметров
-    (что спросить у пользователя), сервер — функцию вычисления.
-    """
-    import math
+operation = ("Площадь трапеции", ["основание a", "основание b", "высота h"], trapezoid)
 
-    VARIANT = 1
+NAME, PARAMS, FUNC = operation
+```
 
+Код сервера — `task2_tcp/server.py`
 
-    def pythagoras(a: float, b: float) -> str:
-        if a <= 0 or b <= 0:
-            raise ValueError("Катеты должны быть положительными")
-        c = math.hypot(a, b)
-        return f"Гипотенуза c = sqrt({a:g}^2 + {b:g}^2) = {c:.4f}"
-
-
-    def quadratic(a: float, b: float, c: float) -> str:
-        if a == 0:
-            raise ValueError("Коэффициент a не должен быть равен 0")
-        d = b * b - 4 * a * c
-        if d > 0:
-            x1 = (-b + math.sqrt(d)) / (2 * a)
-            x2 = (-b - math.sqrt(d)) / (2 * a)
-            return f"D = {d:g} > 0, два корня: x1 = {x1:.4f}, x2 = {x2:.4f}"
-        if d == 0:
-            return f"D = 0, один корень: x = {-b / (2 * a):.4f}"
-        return f"D = {d:g} < 0, действительных корней нет"
-
-
-    def trapezoid(a: float, b: float, h: float) -> str:
-        if a <= 0 or b <= 0 or h <= 0:
-            raise ValueError("Основания и высота должны быть положительными")
-        return f"Площадь трапеции S = (({a:g} + {b:g}) / 2) * {h:g} = {(a + b) / 2 * h:.4f}"
-
-
-    def parallelogram(a: float, h: float) -> str:
-        if a <= 0 or h <= 0:
-            raise ValueError("Основание и высота должны быть положительными")
-        return f"Площадь параллелограмма S = {a:g} * {h:g} = {a * h:.4f}"
-
-
-    # номер варианта -> (название, названия параметров, функция)
-    OPERATIONS = {
-        1: ("Теорема Пифагора", ["катет a", "катет b"], pythagoras),
-        2: ("Квадратное уравнение ax^2 + bx + c = 0", ["a", "b", "c"], quadratic),
-        3: ("Площадь трапеции", ["основание a", "основание b", "высота h"], trapezoid),
-        4: ("Площадь параллелограмма", ["основание a", "высота h"], parallelogram),
-    }
-
-    NAME, PARAMS, FUNC = OPERATIONS[VARIANT]
-    ```
-
-  info "Код сервера — `task2_tcp/server.py`"
-    ```python
-    """Задание 2. TCP-сервер: получает параметры, считает, возвращает результат.
-
-    Протокол: клиент присылает одну строку с числами через пробел, заканчивающуюся
-    символом '\n'; сервер отвечает одной строкой текста, тоже заканчивающейся '\n'.
-    Ответ начинается с 'OK: ' или 'ОШИБКА: '.
-    """
+```
     import socket
 
-    from operations import FUNC, NAME, PARAMS
+HOST = "127.0.0.1"
+PORT = 9002
+PARAMS = []
 
-    HOST = "127.0.0.1"
-    PORT = 9002
+from trapezoid import *
 
-
-    def calculate(line: str) -> str:
-        """Разбирает строку с параметрами и вызывает функцию варианта."""
-        parts = line.split()
-        if len(parts) != len(PARAMS):
-            return f"ОШИБКА: ожидается параметров: {len(PARAMS)}, получено: {len(parts)}"
-        try:
-            numbers = [float(p.replace(",", ".")) for p in parts]
-        except ValueError:
-            return "ОШИБКА: параметры должны быть числами"
-        try:
-            return "OK: " + FUNC(*numbers)
-        except ValueError as exc:  # недопустимые значения (например, отрицательная длина)
-            return f"ОШИБКА: {exc}"
-
-
-    def main() -> None:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            server_socket.bind((HOST, PORT))
-            server_socket.listen(5)
-            print(f"TCP-сервер запущен на {HOST}:{PORT}. Операция: {NAME}")
-
-            while True:
-                conn, address = server_socket.accept()
-                with conn:
-                    print(f"[сервер] подключение от {address}")
-                    with conn.makefile("r", encoding="utf-8", newline="\n") as reader:
-                        line = reader.readline().strip()
-                    print(f"[сервер] получено: {line!r}")
-                    answer = calculate(line)
-                    print(f"[сервер] отправляю: {answer}")
-                    conn.sendall((answer + "\n").encode("utf-8"))
+def calculate(line: str) -> str:
+    """Разбирает строку с параметрами и вызывает функцию варианта."""
+    coef = list(map(str,line.split()))
+    if len(coef) != 3:
+        return f"""
+        ОШИБКА: ожидается параметров: 3, получено: {len(coef)}. Введите параметры в формате: x x x через пробел
+        """
+    try:
+        numbers = [float(p.replace(",", ".")) for p in coef]
+    except ValueError:
+        return "ОШИБКА: параметры должны быть числами"
+    try:
+        return "OK: " + trapezoid(numbers[0], numbers[1], numbers[2])
+    except ValueError as exc:  # недопустимые значения (например, отрицательная длина)
+        return f"ОШИБКА: {exc}"
 
 
-    if __name__ == "__main__":
-        try:
-            main()
-        except KeyboardInterrupt:
-            print("\nСервер остановлен.")
-    ```
+def main() -> None:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server_socket.bind((HOST, PORT))
+        server_socket.listen(5)
+        print(f"TCP-сервер запущен на {HOST}:{PORT}. Операция: Поиск площади трапеции")
 
-  info "Код клиента — `task2_tcp/client.py`"
-    ```python
-    """Задание 2. TCP-клиент: вводит параметры с клавиатуры, получает результат."""
-    import socket
-
-    from operations import NAME, PARAMS
-
-    SERVER_ADDRESS = ("127.0.0.1", 9002)
-
-
-    def main() -> None:
-        print(f"Операция: {NAME}")
-        values = [input(f"Введите {name}: ").strip() for name in PARAMS]
-
-        try:
-            with socket.create_connection(SERVER_ADDRESS, timeout=5) as client_socket:
-                client_socket.sendall((" ".join(values) + "\n").encode("utf-8"))
-                with client_socket.makefile("r", encoding="utf-8", newline="\n") as reader:
-                    answer = reader.readline().strip()
-        except OSError as exc:
-            print(f"Не удалось связаться с сервером: {exc}")
-            return
-
-        print(f"Ответ сервера: {answer}")
+        while True:
+            conn, address = server_socket.accept()
+            with conn:
+                print(f"[сервер] подключение от {address}")
+                with conn.makefile("r", encoding="utf-8", newline="\n") as reader:
+                    line = reader.readline().strip()
+                print(f"[сервер] получено: {line!r}")
+                answer = calculate(line)
+                print(f"[сервер] отправляю: {answer}")
+                conn.sendall((answer + "\n").encode("utf-8"))
 
 
-    if __name__ == "__main__":
+if __name__ == "__main__":
+    try:
         main()
-    ```
+    except KeyboardInterrupt:
+        print("\nСервер остановлен.")
+```
+
+Код клиента — `task2_tcp/client.py`
+
+```
+import socket
+
+SERVER_ADDRESS = ("127.0.0.1", 9002)
+
+from trapezoid import *
+
+def main() -> None:
+    print(f"Операция: Поиск площади трапеции")
+    values = [input(f"Введите {name}: ").strip() for name in PARAMS]
+
+    try:
+        with socket.create_connection(SERVER_ADDRESS, timeout=5) as client_socket:
+            client_socket.sendall((" ".join(values) + "\n").encode("utf-8"))
+            with client_socket.makefile("r", encoding="utf-8", newline="\n") as reader:
+                answer = reader.readline().strip()
+    except OSError as exc:
+        print(f"Не удалось связаться с сервером: {exc}")
+        return
+
+    print(f"Ответ сервера: {answer}")
+
+
+if __name__ == "__main__":
+    main()
+```
 
 **Пример работы.**
 
-=== "Клиент: корректный ввод"
+---
 
-    ```text
-    Операция: Теорема Пифагора
-    Введите катет a: 3
-    Введите катет b: 4
-    Ответ сервера: OK: Гипотенуза c = sqrt(3^2 + 4^2) = 5.0000
-    ```
+<img width="1919" height="381" alt="image" src="https://github.com/user-attachments/assets/aa3e8877-9e97-4cce-92a4-5709a41764aa" />
 
-=== "Клиент: отрицательный катет"
+<img width="1919" height="376" alt="image" src="https://github.com/user-attachments/assets/edc88382-eb78-4a81-bd95-49a25505b022" />
 
-    ```text
-    Операция: Теорема Пифагора
-    Введите катет a: -1
-    Введите катет b: 4
-    Ответ сервера: ОШИБКА: Катеты должны быть положительными
-    ```
-
-=== "Клиент: не число"
-
-    ```text
-    Операция: Теорема Пифагора
-    Введите катет a: abc
-    Введите катет b: 4
-    Ответ сервера: ОШИБКА: параметры должны быть числами
-    ```
-
-=== "Сервер"
-
-    ```text
-    TCP-сервер запущен на 127.0.0.1:9002. Операция: Теорема Пифагора
-    [сервер] подключение от ('127.0.0.1', 47362)
-    [сервер] получено: '3 4'
-    [сервер] отправляю: OK: Гипотенуза c = sqrt(3^2 + 4^2) = 5.0000
-    [сервер] подключение от ('127.0.0.1', 47374)
-    [сервер] получено: '-1 4'
-    [сервер] отправляю: ОШИБКА: Катеты должны быть положительными
-    [сервер] подключение от ('127.0.0.1', 47376)
-    [сервер] получено: 'abc 4'
-    [сервер] отправляю: ОШИБКА: параметры должны быть числами
-    ```
+<img width="1919" height="380" alt="image" src="https://github.com/user-attachments/assets/cab1b585-862d-4323-a9c4-69e4ee72954c" />
 
 ---
 
 ## Задание 3. Раздача HTML-страницы по HTTP
 
 **Условие.** Клиент подключается к серверу и в ответ получает HTTP-сообщение с HTML-страницей из файла `index.html`.
-
-**Как устроено.**
 
 HTTP-ответ — обычный текст строгого формата: статусная строка, заголовки, пустая строка (`\r\n\r\n`) и тело.
 
@@ -329,9 +230,9 @@ Connection: close
 <содержимое index.html>
 ```
 
-  info "Код сервера — `task3_http/server.py`"
-    ```python
-    """Задание 3. Сервер раздаёт HTML-страницу из index.html по HTTP."""
+Код сервера — `task3_http/server.py`
+
+```
     import socket
     from pathlib import Path
 
@@ -374,10 +275,11 @@ Connection: close
             main()
         except KeyboardInterrupt:
             print("\nСервер остановлен.")
-    ```
+```
 
-  info "HTML-страница — `task3_http/index.html`"
-    ```html
+"HTML-страница — `task3_http/index.html`
+```
+    html
     <!DOCTYPE html>
     <html lang="ru">
     <head>
@@ -389,48 +291,23 @@ Connection: close
         <p>Её отдаёт сервер, написанный на чистых сокетах Python.</p>
     </body>
     </html>
-    ```
+```
 
-**Пример работы.** Запуск `python server.py`, затем в браузере `http://127.0.0.1:8080/` или `curl`:
+**Пример работы.** Запуск `python server.py`, затем в браузере `http://127.0.0.1:8080/`:
 
-=== "curl -i"
+---
 
-    ```text
-    $ curl -i http://127.0.0.1:8080/
-    HTTP/1.1 200 OK
-    Content-Type: text/html; charset=UTF-8
-    Content-Length: 346
-    Connection: close
+<img width="1919" height="382" alt="image" src="https://github.com/user-attachments/assets/0e0ea54b-b65b-410b-8b96-8a954a436f25" />
 
-    <!DOCTYPE html>
-    <html lang="ru">
-    <head>
-        <meta charset="UTF-8">
-        <title>Страница с сокет-сервера</title>
-    </head>
-    <body>
-        <h1>Привет! Это страница из файла index.html</h1>
-        <p>Её отдаёт сервер, написанный на чистых сокетах Python.</p>
-    </body>
-    </html>
-    ```
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/599d5bf3-0fa6-498e-b277-24a448750c6d" />
 
-=== "Лог сервера"
-
-    ```text
-    HTTP-сервер запущен: http://127.0.0.1:8080/
-    [сервер] ('127.0.0.1', 38756): GET / HTTP/1.1
-    ```
-
-Заголовок `Content-Length: 346` совпал с реальным размером тела (проверено программно).
+<img width="1919" height="378" alt="image" src="https://github.com/user-attachments/assets/a5c45d4c-2605-4d38-99ee-e9ff917581b9" />
 
 ---
 
 ## Задание 4. Многопользовательский чат (TCP + threading)
 
 **Условие.** Многопользовательский чат с идентификацией пользователей и возможностью выйти.
-
-**Как устроено.**
 
 - **Один** клиентский скрипт `client.py`: имя пользователя передаётся аргументом
   (`python client.py Alice`) или вводится с клавиатуры. Имена в коде не зашиты — каждый участник просто запускает
@@ -444,21 +321,9 @@ Connection: close
   убирает пользователя из списка и сообщает остальным.
 - Сообщение рассылается всем, кроме отправителя.
 
-| Сообщение | Формат |
-|-----------|--------|
-| Текст пользователя | `[Alice] Привет всем!` |
-| Вход / выход | `*** Bob вошёл в чат ***` / `*** Bob покинул чат ***` |
+Код сервера — `task4_chat/server.py`
 
-  info "Код сервера — `task4_chat/server.py`"
-    ```python
-    """Задание 4. Многопользовательский TCP-чат.
-
-    Протокол (текстовый, одна команда = одна строка, оканчивающаяся '\n'):
-      клиент -> сервер: первая строка — имя пользователя,
-                        далее — текст сообщений; '/quit' — выход из чата
-      сервер -> клиент: на имя отвечает 'OK' или 'ERR <причина>',
-                        затем присылает строки чата
-    """
+```
     import socket
     import threading
 
@@ -547,14 +412,11 @@ Connection: close
             main()
         except KeyboardInterrupt:
             print("\nСервер остановлен.")
-    ```
+```
 
-  info "Код клиента — `task4_chat/client.py`"
-    ```python
-    """Задание 4. Клиент чата. Один и тот же скрипт запускают все участники.
+Код клиента — `task4_chat/client.py
 
-    Использование:  python client.py [имя]   (если имя не задано — спросим)
-    """
+```
     import socket
     import sys
     import threading
@@ -618,79 +480,23 @@ Connection: close
 
     if __name__ == "__main__":
         main()
-    ```
+```
 
 **Пример работы.** Сервер и три клиента (Alice, Bob, Carol), запущенные в разных терминалах.
-Строки без префикса — то, что пользователь набрал сам.
 
-=== "Alice"
+---
 
-    ```text
-    Добро пожаловать, Alice! Выход: /quit
+<img width="1919" height="379" alt="image" src="https://github.com/user-attachments/assets/7242f88a-b845-463c-aa8e-686df3589874" />
 
-    *** Bob вошёл в чат ***
+<img width="1919" height="362" alt="image" src="https://github.com/user-attachments/assets/e22d35e8-1f54-4c57-bdf3-f286548adac4" />
 
-    *** Carol вошёл в чат ***
+<img width="1919" height="381" alt="image" src="https://github.com/user-attachments/assets/7a49568d-fd47-4680-981b-7be109db3fd4" />
 
-    [Bob] Привет, Alice!
-    Привет всем!
+<img width="1919" height="380" alt="image" src="https://github.com/user-attachments/assets/bb57da92-61fa-4947-9938-78c8c4e392b5" />
 
-    *** Bob покинул чат ***
+<img width="1746" height="379" alt="image" src="https://github.com/user-attachments/assets/d5ccfbd3-44e9-411e-8fd1-332d07974080" />
 
-    [Carol] Всем привет, я Carol
-    Bob, ты тут?
-    /quit
-    Вы вышли из чата.
-    ```
-
-=== "Bob"
-
-    ```text
-    Добро пожаловать, Bob! Выход: /quit
-
-    *** Carol вошёл в чат ***
-    Привет, Alice!
-
-    [Alice] Привет всем!
-    /quit
-    Вы вышли из чата.
-    ```
-
-=== "Carol"
-
-    ```text
-    Добро пожаловать, Carol! Выход: /quit
-
-    [Bob] Привет, Alice!
-
-    [Alice] Привет всем!
-
-    *** Bob покинул чат ***
-    Всем привет, я Carol
-
-    [Alice] Bob, ты тут?
-
-    *** Alice покинул чат ***
-    ```
-
-=== "Занятое имя"
-
-    ```text
-    Сервер отклонил имя: имя уже занято
-    ```
-
-=== "Сервер"
-
-    ```text
-    Чат-сервер запущен на 127.0.0.1:9004
-    [сервер] Alice подключился (('127.0.0.1', 45724))
-    [сервер] Bob подключился (('127.0.0.1', 53392))
-    [сервер] Carol подключился (('127.0.0.1', 53406))
-    [сервер] Bob отключился
-    [сервер] Alice отключился
-    [сервер] Carol отключился
-    [сервер] Dave подключился (('127.0.0.1', 53408))
-    ```
+<img width="1919" height="380" alt="image" src="https://github.com/user-attachments/assets/647befb3-f730-45d4-b2eb-b5ea79dfdf15" />
 
 ---
 
